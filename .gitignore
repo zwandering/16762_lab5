@@ -1,7 +1,2 @@
 __pycache__/
 *.pyc
-log/
-demos.pkl
-*.log
-imitation_policy.pt
-*.mp4
