@@ -38,14 +38,11 @@ def collect_demos(n_demos=1000):
                 result = policy(Batch(obs=obs, info=info))
                 action = result.act
 
-            # TODO: ------------- start --------------
             X.append(obs[0])
-            act_np = action[0].cpu().numpy() if hasattr(action[0], 'cpu') else np.array(action[0])
-            y.append(act_np)
+            y.append(action[0].cpu().numpy())
             obs, reward, terminated, truncated, info = venv.step(action)
             terminated = terminated[0]
             truncated = truncated[0]
-            # TODO: -------------- end ---------------
 
         # Save after each episode
         if (i + 1) % 10 == 0 or i == n_demos - 1:

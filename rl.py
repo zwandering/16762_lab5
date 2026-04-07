@@ -14,25 +14,18 @@ class TouchEnv(gym.Env):
         self.action_space = gym.spaces.Box(low=-1.0, high=1.0, shape=(7,))
 
     def _get_obs(self):
-        # TODO: ------------- start --------------
-        # End effector position in local frame
         ee_pos, _ = self.robot.get_link_pos_orient(self.robot.end_effector)
         ee_local, _ = self.robot.global_to_local_coordinate_frame(ee_pos)
 
-        # Object position in local frame
         obj_pos, _ = self.object.get_base_pos_orient()
         obj_local, _ = self.robot.global_to_local_coordinate_frame(obj_pos)
 
-        # Difference
         diff = obj_local - ee_local
 
-        # Joint angles: [lift, sum_of_arm, yaw, pitch, roll]
         angles = self.robot.get_joint_angles(self.robot.controllable_joints)
-        # angles order: [right_wheel, left_wheel, lift, arm/4 x4, yaw, pitch, roll, gripper_r, gripper_l]
         joint_obs = np.array([angles[2], np.sum(angles[3:7]), angles[7], angles[8], angles[9]])
 
         return np.concatenate([ee_local, obj_local, diff, joint_obs]).astype(np.float32)
-        # TODO: -------------- end ---------------
 
     def _get_info(self):
         return {}
@@ -71,8 +64,6 @@ class TouchEnv(gym.Env):
     def step(self, action):
         # action is delta joint angle change
         scale = 0.025
-        if hasattr(action, 'cpu'):
-            action = action.cpu().numpy()
         action = np.array(action)
         scaled_action = np.concatenate([action[:2]*0.5,         # Base movements
                                         [action[2]*scale],      # Lift joint
@@ -83,12 +74,9 @@ class TouchEnv(gym.Env):
         self.robot.control(current_angles + scaled_action)
         m.step_simulation(steps=10, realtime=self.env.render)
 
-        # TODO: ------------- start --------------
         ee_pos, _ = self.robot.get_link_pos_orient(self.robot.end_effector)
         obj_pos, _ = self.object.get_base_pos_orient()
-        dist = np.linalg.norm(ee_pos - obj_pos)
-        reward = -dist
-        # TODO: -------------- end ---------------
+        reward = -np.linalg.norm(ee_pos - obj_pos)
 
         observation = self._get_obs()
         info = self._get_info()
